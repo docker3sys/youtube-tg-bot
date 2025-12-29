@@ -96,11 +96,10 @@ application.add_handler(CommandHandler("parse", parse))
 
 
 # ===== WEBHOOK =====
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["POST"])
 async def webhook():
-    if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), application.bot)
-        await application.process_update(update)
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    await application.process_update(update)
     return "ok"
 
 
