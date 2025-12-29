@@ -12,6 +12,10 @@ YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
 bot = Bot(token=TOKEN)
 app = Flask(__name__)
 
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
 # ===== Функции парсинга YouTube =====
 def extract_channel_id(url_or_id):
     """
