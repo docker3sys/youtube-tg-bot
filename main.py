@@ -27,7 +27,7 @@ def extract_channel_id(url_or_id):
     handle = url_or_id.split("/")[-1]
     api_url = "https://www.googleapis.com/youtube/v3/search"
     params = {
-        "key": YOUTUBE_API_KEY,
+        "key": API_KEY_YOUTUBE,
         "q": handle,
         "part": "snippet",
         "type": "channel",
@@ -46,7 +46,7 @@ def parse_channel(channel_id):
     videos = []
     api_url = "https://www.googleapis.com/youtube/v3/search"
     params = {
-        "key": YOUTUBE_API_KEY,
+        "key": API_KEY_YOUTUBE,
         "channelId": channel_id,
         "part": "snippet",
         "maxResults": 50,
