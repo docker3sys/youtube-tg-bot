@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ===== Переменные окружения =====
 TOKEN = os.environ["TOKEN"]
-YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
+API_KEY_YOUTUBE = os.environ["API_KEY_YOUTUBE"]
 
 bot = Bot(token=TOKEN)
 app = Flask(__name__)
