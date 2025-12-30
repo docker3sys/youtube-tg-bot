@@ -5,6 +5,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from youtube_parser import extract_channel_id, parse_channel
 import asyncio
 
+loop = asyncio.get_event_loop()
+
 TOKEN = os.environ["TOKEN"]
 
 # Flask
@@ -40,7 +42,7 @@ asyncio.run(application.initialize())
 @app.route("/webhook", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.run(application.process_update(update))
+    loop.create_task(application.process_update(update))
     return "ok"
 
 # Healthcheck
