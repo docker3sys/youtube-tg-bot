@@ -1,55 +1,56 @@
 import os
-from flask import Flask, request
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from youtube_parser import extract_channel_id, parse_channel
-import asyncio
+import requests
+import pandas as pd
 
-TOKEN = os.environ["TOKEN"]
-APP_URL = "https://hello-tg-bot-production.up.railway.app"
+API_KEY = os.environ["API_KEY_YOUTUBE"]
 
-# Flask app
-app = Flask(__name__)
+def extract_channel_id(url_or_id: str) -> str | None:
+    url_or_id = url_or_id.strip()
+    if url_or_id.startswith("UC"):
+        return url_or_id
 
-# Telegram bot
-application = ApplicationBuilder().token(TOKEN).build()
+    handle = url_or_id.split("/")[-1]
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Бот работает.\nИспользуй команду:\n/parse <ID или @namechannel>"
-    )
+    r = requests.get(
+        "https://www.googleapis.com/youtube/v3/search",
+        params={
+            "key": API_KEY,
+            "q": handle,
+            "part": "snippet",
+            "type": "channel",
+            "maxResults": 1,
+        },
+        timeout=10,
+    ).json()
 
-async def parse(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("Передай ID или @namechannel")
-        return
+    items = r.get("items", [])
+    if not items:
+        return None
 
-    await update.message.reply_text("Определяю канал...")
-    channel_id = extract_channel_id(context.args[0])
-    if not channel_id:
-        await update.message.reply_text("Не удалось определить ID канала")
-        return
+    return items[0]["snippet"]["channelId"]
 
-    await update.message.reply_text("Парсю видео...")
-    file_path = parse_channel(channel_id)
+def parse_channel(channel_id: str) -> str:
+    r = requests.get(
+        "https://www.googleapis.com/youtube/v3/search",
+        params={
+            "key": API_KEY,
+            "channelId": channel_id,
+            "part": "snippet",
+            "maxResults": 50,
+            "order": "date",
+            "type": "video",
+        },
+        timeout=10,
+    ).json()
 
-    with open(file_path, "rb") as f:
-        await update.message.reply_document(f)
+    videos = []
+    for item in r.get("items", []):
+        videos.append({
+            "title": item["snippet"]["title"],
+            "url": f"https://www.youtube.com/watch?v={item['id']['videoId']}",
+            "published": item["snippet"]["publishedAt"],
+        })
 
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("parse", parse))
-
-# Инициализация Telegram
-asyncio.run(application.initialize())
-
-# Webhook endpoint для Flask
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.run(application.process_update(update))
-    return "ok"
-
-# Healthcheck
-@app.route("/", methods=["GET"])
-def index():
-    return "OK"
+    path = "videos.xlsx"
+    pd.DataFrame(videos).to_excel(path, index=False)
+    return path
